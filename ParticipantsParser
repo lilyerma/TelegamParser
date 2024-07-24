@@ -1,0 +1,67 @@
+import telethon, itertools, asyncio, random, csv
+from telethon import TelegramClient
+import pandas as pd
+
+api_id = 
+api_hash = ''
+phone = ''
+channel_href = ''
+
+client = TelegramClient('session_name', api_id, api_hash)
+client = await client.start()
+dialogs = await client.get_dialogs()
+
+channels = {d.entity.username: d.entity
+            for d in dialogs
+            if d.is_channel}
+my_channel = channel_href.split('/')[-1]
+channel = channels[my_channel]
+
+
+def search_queries():
+    alphabets = [
+        "qwertyuiopasdfghjklzxcvbnm",
+        "йцукенгшщзхъёфывапролджэячсмитьбю",
+        "1234567890",
+    ]
+    
+    for alphabet in alphabets:
+        for c in alphabet:
+            yield c 
+    
+    # if your channel is large 
+    # let's generate pairs:
+    for alphabet in alphabets:
+        for pair in itertools.permutations(alphabet, 2):
+            yield "".join(pair)
+
+participants = {}  # store users info here
+
+for query in search_queries():
+    async for res in client.iter_participants(
+        channel, search=query
+    ):
+        participants[res.id] = res.to_dict() 
+    
+    # if you want to be gentle
+    await asyncio.sleep(random.random() * 3 + 2)
+
+with open('user_data.csv', 'w', newline='') as csvfile:
+    # Create a CSV writer object
+    writer = csv.DictWriter(csvfile, fieldnames=['ID', 'Username', 'First Name', 'Last Name'])
+    # Write the header row
+    writer.writeheader()
+
+    # Iterate through each user in the dictionary and write data to the CSV
+    for user_id, user_info in participants.items():
+        # Extract relevant data
+        user_dict = {
+            'ID': user_id,
+            'Username': user_info['username'],
+            'First Name': user_info['first_name'],
+            'Last Name': user_info['last_name']
+        }
+        # Write the user data row to the CSV
+        writer.writerow(user_dict)
+
+print("CSV file 'user_data.csv' created successfully!")
